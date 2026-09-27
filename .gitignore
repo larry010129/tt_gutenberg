@@ -1,15 +1,32 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
+# Jupyter Notebook
+**.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Python
+cython_debug/
+*__pycache__/
 *.py[cod]
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# Data
-*.csv
+# data
 *.zip
+*.csv
+*.db
+*.graphml
+# *.pickle
 
-# Environments
+# notebooks
+*scratch.ipynb
+# *.ipynb
+
+# OS
+**.DS_Store
+*.idea
+.vscode
+
+# project
 .env
-.venv
 
+# environment (ignore one, use the other)

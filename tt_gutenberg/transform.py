@@ -34,8 +34,8 @@ def load_languages():
 
 
 @lru_cache(maxsize=1)
-def get_gutenberg_data():
-    """Merge and clean Gutenberg metadata, authors, and languages datasets."""
+def get_transformed_data():
+    """Merge and transform Gutenberg metadata, authors, and languages."""
     authors = load_authors()
     metadata = load_metadata()
     languages = load_languages()
