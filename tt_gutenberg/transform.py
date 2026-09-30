@@ -2,6 +2,8 @@ from functools import lru_cache
 
 import pandas as pd
 
+DATA = None
+
 
 @lru_cache(maxsize=1)
 def load_authors():
@@ -33,9 +35,12 @@ def load_languages():
     return pd.read_csv(url)
 
 
-@lru_cache(maxsize=1)
-def get_transformed_data():
-    """Merge and transform Gutenberg metadata, authors, and languages."""
+def get_data():
+    """Return merged authors, metadata, and languages (cached in DATA)."""
+    global DATA
+    if DATA is not None:
+        return DATA
+
     authors = load_authors()
     metadata = load_metadata()
     languages = load_languages()
@@ -47,9 +52,15 @@ def get_transformed_data():
         valid_meta, on="gutenberg_id", how="inner"
     )
 
-    return books_with_lang.merge(
+    DATA = books_with_lang.merge(
         authors,
         on="gutenberg_author_id",
         how="inner",
         suffixes=("_book", "_author"),
     )
+    return DATA
+
+
+def get_transformed_data():
+    """Alias of get_data, kept for backward compatibility."""
+    return get_data()

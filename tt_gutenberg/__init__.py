@@ -1,5 +1,6 @@
 from tt_gutenberg.authors import list_authors, plot_translations
 from tt_gutenberg.transform import (
+    get_data,
     get_transformed_data,
     load_authors,
     load_languages,
@@ -9,6 +10,7 @@ from tt_gutenberg.transform import (
 __all__ = [
     "list_authors",
     "plot_translations",
+    "get_data",
     "get_transformed_data",
     "load_authors",
     "load_metadata",

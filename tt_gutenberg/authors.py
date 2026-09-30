@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from tt_gutenberg.transform import get_transformed_data
+from tt_gutenberg.transform import get_data
 
 
 def list_authors(by_languages=True, alias=True):
     """Return a list of author aliases or names ordered by translation count."""
-    df = get_transformed_data()
+    df = get_data()
 
     if alias:
         valid_df = df[
@@ -38,7 +38,7 @@ def plot_translations(over="birth_century"):
     if over != "birth_century":
         raise ValueError(f"Unsupported group dimension: '{over}'.")
 
-    df = get_transformed_data()
+    df = get_data()
     author_df = df.dropna(subset=["author", "birthdate"]).copy()
 
     author_counts = (
