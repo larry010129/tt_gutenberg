@@ -4,6 +4,11 @@ import seaborn as sns
 from tt_gutenberg.transform import get_data
 
 
+def name_in_index(df, name):
+    """Return True if name is an index level of df but not a column."""
+    return name in df.index.names and name not in df.columns
+
+
 def _count_translations(df, group_col):
     """Count distinct languages (translations) per value of group_col."""
     if "language" in df.columns:
@@ -13,14 +18,25 @@ def _count_translations(df, group_col):
     return df.groupby(group_col).size()
 
 
-def list_authors(by_languages=True, alias=True):
-    """Return a list of author aliases or names ordered by translation count."""
-    df = get_data()
+def _find_column(df, name):
+    """Return the column of df that best matches name, or raise KeyError."""
+    lowered = {str(col).lower(): col for col in df.columns}
+    for candidate in (name, f"{name}es", f"{name}s"):
+        if candidate in lowered:
+            return lowered[candidate]
+    for low, col in lowered.items():
+        if name in low:
+            return col
+    raise KeyError(name)
 
-    if alias:
-        target_col = "alias" if "alias" in df.columns else "aliases"
-    else:
-        target_col = "author"
+
+def list_authors(by_languages=True, alias=True):
+    """Return author aliases (or names) ordered by translation count."""
+    df = get_data()
+    if name_in_index(df, "alias" if alias else "author"):
+        df = df.reset_index()
+
+    target_col = _find_column(df, "alias" if alias else "author")
 
     valid_df = df[
         df[target_col].notna()
@@ -30,7 +46,8 @@ def list_authors(by_languages=True, alias=True):
 
     if by_languages:
         counts = _count_translations(valid_df, target_col)
-        return counts.sort_values(ascending=False, kind="stable").index.tolist()
+        counts = counts.sort_values(ascending=False, kind="stable")
+        return counts.index.tolist()
 
     return valid_df[target_col].unique().tolist()
 
