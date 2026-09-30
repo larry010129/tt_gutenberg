@@ -81,12 +81,7 @@ def plot_translations(over="birth_century"):
         errorbar=("ci", 95),
         color="#3470a3",
     )
-    ax.set_title(
-        "Average Author Translation Count by Birth Century",
-        fontsize=14,
-        fontweight="bold",
-        pad=15,
-    )
+    ax.set_title("Translation Count Over Birth Century")
     ax.set_xlabel("Birth Century", fontsize=12, labelpad=10)
     ax.set_ylabel(
         "Average Translation Count (Languages)", fontsize=12, labelpad=10
