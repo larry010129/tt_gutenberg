@@ -2,7 +2,7 @@ from functools import lru_cache
 
 import pandas as pd
 
-DATA = None
+DATA = {}
 
 
 @lru_cache(maxsize=1)
@@ -35,30 +35,44 @@ def load_languages():
     return pd.read_csv(url)
 
 
-def get_data():
-    """Return merged authors, metadata, and languages (cached in DATA)."""
-    global DATA
-    if DATA is not None:
-        return DATA
-
-    authors = load_authors()
-    metadata = load_metadata()
-    languages = load_languages()
-
-    valid_meta = metadata[["gutenberg_id", "gutenberg_author_id"]].dropna(
-        subset=["gutenberg_author_id"]
-    )
-    books_with_lang = languages.merge(
-        valid_meta, on="gutenberg_id", how="inner"
-    )
-
-    DATA = books_with_lang.merge(
-        authors,
-        on="gutenberg_author_id",
-        how="inner",
-        suffixes=("_book", "_author"),
-    )
+def _datasets():
+    """Return the DATA dict of DataFrames, loading any missing datasets."""
+    loaders = {
+        "authors": load_authors,
+        "metadata": load_metadata,
+        "languages": load_languages,
+    }
+    if not DATA:
+        for name, loader in loaders.items():
+            DATA[name] = loader()
     return DATA
+
+
+def get_data():
+    """Merge authors and metadata (plus languages if available)."""
+    data = _datasets()
+    authors = data["authors"]
+    metadata = data["metadata"]
+
+    meta = metadata.dropna(subset=["gutenberg_author_id"])
+    if "author" in meta.columns and "author" in authors.columns:
+        meta = meta.drop(columns="author")
+    merged = meta.merge(authors, on="gutenberg_author_id", how="inner")
+
+    languages = data.get("languages")
+    if (
+        languages is not None
+        and "total_languages" not in merged.columns
+        and "gutenberg_id" in merged.columns
+    ):
+        merged = merged.merge(
+            languages[["gutenberg_id", "total_languages"]].drop_duplicates(
+                "gutenberg_id"
+            ),
+            on="gutenberg_id",
+            how="left",
+        )
+    return merged
 
 
 def get_transformed_data():

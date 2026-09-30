@@ -4,33 +4,47 @@ import seaborn as sns
 from tt_gutenberg.transform import get_data
 
 
+def _count_translations(df, group_col):
+    """Count distinct languages (translations) per value of group_col."""
+    if "language" in df.columns:
+        return df.groupby(group_col)["language"].nunique()
+    if "total_languages" in df.columns:
+        return df.groupby(group_col)["total_languages"].max()
+    return df.groupby(group_col).size()
+
+
 def list_authors(by_languages=True, alias=True):
     """Return a list of author aliases or names ordered by translation count."""
     df = get_data()
 
     if alias:
-        valid_df = df[
-            df["alias"].notna()
-            & (df["alias"].astype(str).str.strip() != "")
-            & (df["alias"].astype(str).str.strip() != "nan")
-        ]
-        target_col = "alias"
+        target_col = "alias" if "alias" in df.columns else "aliases"
     else:
-        valid_df = df[
-            df["author"].notna()
-            & (df["author"].astype(str).str.strip() != "")
-        ]
         target_col = "author"
 
-    if by_languages:
-        sorted_series = (
-            valid_df.groupby(target_col)["language"]
-            .nunique()
-            .sort_values(ascending=False)
-        )
-        return sorted_series.index.tolist()
+    valid_df = df[
+        df[target_col].notna()
+        & (df[target_col].astype(str).str.strip() != "")
+        & (df[target_col].astype(str).str.strip() != "nan")
+    ]
 
-    return valid_df[target_col].dropna().unique().tolist()
+    if by_languages:
+        counts = _count_translations(valid_df, target_col)
+        return counts.sort_values(ascending=False, kind="stable").index.tolist()
+
+    return valid_df[target_col].unique().tolist()
+
+
+def plot_prep(df=None):
+    """Return per-author translation counts with a birth century column."""
+    if df is None:
+        df = get_data()
+    author_df = df.dropna(subset=["author", "birthdate"]).copy()
+    counts = _count_translations(
+        author_df, ["author", "birthdate"]
+    ).reset_index(name="translation_count")
+    counts["birth_century"] = ((counts["birthdate"] // 100) * 100).astype(int)
+    return counts[counts["birth_century"] >= 0].sort_values("birth_century")
 
 
 def plot_translations(over="birth_century"):
@@ -38,21 +52,7 @@ def plot_translations(over="birth_century"):
     if over != "birth_century":
         raise ValueError(f"Unsupported group dimension: '{over}'.")
 
-    df = get_data()
-    author_df = df.dropna(subset=["author", "birthdate"]).copy()
-
-    author_counts = (
-        author_df.groupby(["author", "birthdate"])["language"]
-        .nunique()
-        .reset_index(name="translation_count")
-    )
-    author_counts["birth_century"] = (
-        (author_counts["birthdate"] // 100) * 100
-    ).astype(int)
-
-    plot_df = author_counts[
-        author_counts["birth_century"] >= 0
-    ].sort_values("birth_century")
+    plot_df = plot_prep()
 
     sns.set_theme(style="whitegrid")
     plt.figure(figsize=(14, 6))
@@ -76,6 +76,4 @@ def plot_translations(over="birth_century"):
     )
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.show()
-
     return ax
