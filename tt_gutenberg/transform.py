@@ -76,6 +76,14 @@ def get_data():
     if "author" in meta.columns and "author" in authors.columns:
         meta = meta.drop(columns="author")
     merged = meta.merge(authors, on="gutenberg_author_id", how="inner")
+    merged = merged.assign(
+        **{
+            f"author_{col}": merged[col]
+            for col in authors.columns
+            if col not in ("gutenberg_author_id", "author")
+            and not col.startswith("author_")
+        }
+    )
 
     languages = _find(data, "lang")
     if (
